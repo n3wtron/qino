@@ -13,6 +13,10 @@
   <property name="windowTitle">
    <string>QIno - UI Interface for ino arduino tool</string>
   </property>
+  <property name="windowIcon">
+   <iconset resource="../resource.qrc">
+    <normaloff>:/icons/images/arduino.png</normaloff>:/icons/images/arduino.png</iconset>
+  </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout_2">
     <item row="0" column="0">
@@ -132,7 +136,9 @@
         <string>Stop</string>
        </property>
        <property name="icon">
-        <iconset theme="process-stop"/>
+        <iconset theme="process-stop">
+         <normaloff/>
+        </iconset>
        </property>
       </widget>
      </item>
@@ -158,7 +164,9 @@
         <string>Clean</string>
        </property>
        <property name="icon">
-        <iconset theme="edit-clear"/>
+        <iconset theme="edit-clear">
+         <normaloff/>
+        </iconset>
        </property>
       </widget>
      </item>
@@ -391,6 +399,10 @@
    </property>
   </action>
   <action name="action_Serial_Monitor">
+   <property name="icon">
+    <iconset resource="../resource.qrc">
+     <normaloff>:/icons/images/connection.png</normaloff>:/icons/images/connection.png</iconset>
+   </property>
    <property name="text">
     <string>&amp;Serial Monitor</string>
    </property>
@@ -403,7 +415,9 @@
    <header>projecttree.h</header>
   </customwidget>
  </customwidgets>
- <resources/>
+ <resources>
+  <include location="../resource.qrc"/>
+ </resources>
  <connections>
   <connection>
    <sender>action_Exit</sender>

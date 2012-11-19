@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'ui/mainwindow.ui'
 #
-# Created: Mon Nov 19 11:14:59 2012
+# Created: Mon Nov 19 17:06:15 2012
 #      by: PyQt4 UI code generator 4.9.3
 #
 # WARNING! All changes made in this file will be lost!
@@ -18,6 +18,9 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName(_fromUtf8("MainWindow"))
         MainWindow.resize(910, 600)
+        icon = QtGui.QIcon()
+        icon.addPixmap(QtGui.QPixmap(_fromUtf8(":/icons/images/arduino.png")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        MainWindow.setWindowIcon(icon)
         self.centralwidget = QtGui.QWidget(MainWindow)
         self.centralwidget.setObjectName(_fromUtf8("centralwidget"))
         self.gridLayout_2 = QtGui.QGridLayout(self.centralwidget)
@@ -152,6 +155,9 @@ class Ui_MainWindow(object):
         self.action_Upload.setIcon(icon)
         self.action_Upload.setObjectName(_fromUtf8("action_Upload"))
         self.action_Serial_Monitor = QtGui.QAction(MainWindow)
+        icon1 = QtGui.QIcon()
+        icon1.addPixmap(QtGui.QPixmap(_fromUtf8(":/icons/images/connection.png")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.action_Serial_Monitor.setIcon(icon1)
         self.action_Serial_Monitor.setObjectName(_fromUtf8("action_Serial_Monitor"))
         self.menu_File.addAction(self.action_New)
         self.menu_File.addAction(self.action_Save)
@@ -221,3 +227,4 @@ class Ui_MainWindow(object):
         self.action_Serial_Monitor.setText(QtGui.QApplication.translate("MainWindow", "&Serial Monitor", None, QtGui.QApplication.UnicodeUTF8))
 
 from projecttree import ProjectTree
+import resource_rc

@@ -1,0 +1,6 @@
+<RCC>
+  <qresource prefix="icons">
+    <file>images/connection.png</file>
+    <file>images/arduino.png</file>
+  </qresource>
+</RCC>
