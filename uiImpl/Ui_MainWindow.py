@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'ui/mainwindow.ui'
 #
-# Created: Mon Nov 19 17:06:15 2012
+# Created: Tue Nov 20 09:22:02 2012
 #      by: PyQt4 UI code generator 4.9.3
 #
 # WARNING! All changes made in this file will be lost!
@@ -39,6 +39,8 @@ class Ui_MainWindow(object):
         self.menu_File.setObjectName(_fromUtf8("menu_File"))
         self.menu_Project = QtGui.QMenu(self.menubar)
         self.menu_Project.setObjectName(_fromUtf8("menu_Project"))
+        self.menuRecently_Opened = QtGui.QMenu(self.menu_Project)
+        self.menuRecently_Opened.setObjectName(_fromUtf8("menuRecently_Opened"))
         self.menu_Build = QtGui.QMenu(self.menubar)
         self.menu_Build.setObjectName(_fromUtf8("menu_Build"))
         self.menu_Help = QtGui.QMenu(self.menubar)
@@ -165,8 +167,10 @@ class Ui_MainWindow(object):
         self.menu_File.addAction(self.action_Save_As)
         self.menu_File.addSeparator()
         self.menu_File.addAction(self.action_Exit)
+        self.menuRecently_Opened.addSeparator()
         self.menu_Project.addAction(self.action_New_Project)
         self.menu_Project.addAction(self.action_Open_Project)
+        self.menu_Project.addAction(self.menuRecently_Opened.menuAction())
         self.menu_Build.addAction(self.action_Build)
         self.menu_Build.addAction(self.action_Clean)
         self.menu_Help.addAction(self.action_About)
@@ -198,6 +202,7 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(QtGui.QApplication.translate("MainWindow", "QIno - UI Interface for ino arduino tool", None, QtGui.QApplication.UnicodeUTF8))
         self.menu_File.setTitle(QtGui.QApplication.translate("MainWindow", "&File", None, QtGui.QApplication.UnicodeUTF8))
         self.menu_Project.setTitle(QtGui.QApplication.translate("MainWindow", "&Project", None, QtGui.QApplication.UnicodeUTF8))
+        self.menuRecently_Opened.setTitle(QtGui.QApplication.translate("MainWindow", "Recently Opened", None, QtGui.QApplication.UnicodeUTF8))
         self.menu_Build.setTitle(QtGui.QApplication.translate("MainWindow", "&Build", None, QtGui.QApplication.UnicodeUTF8))
         self.menu_Help.setTitle(QtGui.QApplication.translate("MainWindow", "&Help", None, QtGui.QApplication.UnicodeUTF8))
         self.menu_Tools.setTitle(QtGui.QApplication.translate("MainWindow", "&Tools", None, QtGui.QApplication.UnicodeUTF8))

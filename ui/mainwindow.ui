@@ -61,8 +61,15 @@
     <property name="title">
      <string>&amp;Project</string>
     </property>
+    <widget class="QMenu" name="menuRecently_Opened">
+     <property name="title">
+      <string>Recently Opened</string>
+     </property>
+     <addaction name="separator"/>
+    </widget>
     <addaction name="action_New_Project"/>
     <addaction name="action_Open_Project"/>
+    <addaction name="menuRecently_Opened"/>
    </widget>
    <widget class="QMenu" name="menu_Build">
     <property name="title">

@@ -1,4 +1,4 @@
-from PyQt4.QtCore import QString,pyqtSlot,QDir,QFile,QIODevice,QProcess,QModelIndex
+from PyQt4.QtCore import QString,pyqtSlot,QDir,QFile,QIODevice,QProcess,QModelIndex,QSettings
 from PyQt4.QtGui import QMainWindow,QFileDialog,QMessageBox,QPalette,QColor,QAction,QTextCursor
 from PyQt4.QtGui import QActionGroup,QMenu,QFileSystemModel
 from uiImpl.Ui_MainWindow import Ui_MainWindow
@@ -10,12 +10,16 @@ class MainWindow(QMainWindow):
 	def __init__(self):
 		QMainWindow.__init__(self)
 		self.ui = Ui_MainWindow()
+		self.tabMap={}
+		self.serialDialog=None
 		self.ui.setupUi(self)
 		self.ui.tabWidget.currentChanged.connect(self.tabChanged)
 		self.ui.action_Close.triggered.connect(self.closeCurrentTab)
 		self.ui.tabWidget.tabCloseRequested.connect(self.tabClosed)
 		self.ui.action_Open_Project.triggered.connect(self.openProject)
 		self.ui.action_New_Project.triggered.connect(self.newProject)
+		
+		self.settings=QSettings("alpha01","qino")
 		
 		#Refresh Serial Ports and Arduino Boards Menu
 		self.boardActs={}
@@ -29,10 +33,10 @@ class MainWindow(QMainWindow):
 		self.ui.action_Serial_Monitor.triggered.connect(self.openSerialMonitor)
 		self.project=None
 		self.refreshSerialPorts()
-		self.tabMap={}
-		self.serialDialog=None
+		#load recent project
+		self.refreshRecentOpenedProject()
 		
-	
+		
 	def getBoardVersions(self):
 		boardVersionProc=QProcess()
 		boardVersionProc.start("ino",["list-models"], mode=QIODevice.ReadOnly)
@@ -128,9 +132,28 @@ class MainWindow(QMainWindow):
 			if (not nf.exists()):
 				nf.open(QIODevice.WriteOnly)
 				nf.close()
+			
+	def refreshRecentOpenedProject(self):
+		self.settings.beginGroup("recentProject")
+		recentProjects=self.settings.value("projects").toStringList()
+		if self.project!=None:
+			if not recentProjects.contains(self.project.path):
+				if recentProjects.count()==5:
+					recentProjects.removeAt(4)
+				recentProjects.insert(0,self.project.path)
+				self.settings.setValue("projects",recentProjects)
+		#create menu
+		self.ui.menuRecently_Opened.clear()
+		for prj in self.settings.value("projects").toList():
+			act=QAction(prj.toString(),self)
+			act.triggered.connect(self.openRecentProject)
+			self.ui.menuRecently_Opened.addAction(act)
+		self.settings.endGroup()
 				
 	def setProject(self,path):
 		self.project=InoProject(path,self)
+		# add to recent opened project
+		self.refreshRecentOpenedProject()
 		self.setSerialPort()
 		""" Actions """
 		self.ui.action_Build.triggered.connect(self.project.build)
@@ -155,18 +178,24 @@ class MainWindow(QMainWindow):
 		self.tabMap={}
 	
 	def unsetProject(self):
+		allClosed=True
 		if (self.project!=None):
-			self.ui.projectTree.clear()
-			self.ui.action_Build.triggered.disconnect(self.project.build)
-			self.ui.action_Clean.triggered.disconnect(self.project.clean)
-			self.ui.action_Upload.triggered.disconnect(self.project.upload)
-			self.ui.action_Save.triggered.disconnect(self.save)
-			self.project.addMessage.disconnect(self.addMessage)
-			self.project.addErrorMessage.disconnect(self.addErrorMessage)
-			self.project.newMessage.disconnect(self.cleanConsole)
-			self.ui.projectTree.itemDoubleClicked.disconnect(self.openFile)
-			self.ui.action_New.triggered.disconnect(self.newFile)
-			self.project=None
+			for _ in range(0,self.ui.tabWidget.count()):
+				if (not self.tabClosed(0) ):
+					allClosed=False
+					break
+			if (allClosed):
+				self.ui.action_Build.triggered.disconnect(self.project.build)
+				self.ui.action_Clean.triggered.disconnect(self.project.clean)
+				self.ui.action_Upload.triggered.disconnect(self.project.upload)
+				self.ui.action_Save.triggered.disconnect(self.save)
+				self.project.addMessage.disconnect(self.addMessage)
+				self.project.addErrorMessage.disconnect(self.addErrorMessage)
+				self.project.newMessage.disconnect(self.cleanConsole)
+				self.ui.projectTree.doubleClicked.disconnect(self.openFile)
+				self.ui.action_New.triggered.disconnect(self.newFile)
+				self.project=None
+		return allClosed
 	
 	def save(self):
 		if (not self.currentCodeEditor is None ):
@@ -182,6 +211,12 @@ class MainWindow(QMainWindow):
 		if (projectDir!=''):
 			self.unsetProject()
 			self.setProject(projectDir)
+			
+	@pyqtSlot()
+	def openRecentProject(self):
+		if self.sender()!=None:
+			if self.unsetProject():
+				self.setProject(self.sender().text())
 	
 	@pyqtSlot(int)
 	def tabChanged(self,tabIndex):
@@ -254,12 +289,7 @@ class MainWindow(QMainWindow):
 				self.openSerialMonitor()
 	
 	def closeEvent(self,event):
-		allClosed=True
-		for _ in range(0,self.ui.tabWidget.count()):
-			if (not self.tabClosed(0) ):
-				allClosed=False
-				break
-		if (allClosed):
+		if (self.unsetProject()):
 			QMainWindow.closeEvent(self,event)
 			if self.serialDialog!=None:
 				self.serialDialog.close()
