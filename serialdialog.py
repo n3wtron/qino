@@ -3,6 +3,7 @@ from PyQt4.QtGui import QDialog,QTextCursor
 from PyQt4.QtCore import QThread, pyqtSignal,pyqtSlot
 import Queue
 import serial
+from serial.serialutil import SerialException
 class SerialMonitor(QThread):
     '''
         Thread to manage serial connection
@@ -21,12 +22,15 @@ class SerialMonitor(QThread):
             self.running=False
     def run(self):
         if (self.serial!=None):
-            while self.running:
-                msg=self.serial.readline()
-                if (msg):
-                    self.newMessage.emit("<: "+msg)
-                else:
-                    pass
+            try:
+                while self.running:
+                    msg=self.serial.readline()
+                    if (msg):
+                        self.newMessage.emit("<: "+msg)
+            except SerialException as e:
+                self.newMessage.emit("# ERROR: "+str(e))
+            except OSError as e:
+                self.newMessage.emit("# ERROR: "+str(e))
         else:
             self.newMessage.emit("ERROR: No serialPort defined")
     

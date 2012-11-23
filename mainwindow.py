@@ -1,5 +1,5 @@
-from PyQt4.QtCore import QString,pyqtSlot,QDir,QFile,QIODevice,QProcess,QModelIndex,QSettings
-from PyQt4.QtGui import QMainWindow,QFileDialog,QMessageBox,QPalette,QColor,QAction,QTextCursor
+from PyQt4.QtCore import QString,pyqtSlot,QDir,QFile,QIODevice,QProcess,QModelIndex,QSettings,Qt
+from PyQt4.QtGui import QMainWindow,QFileDialog,QMessageBox,QPalette,QColor,QAction,QTextCursor,QTextCharFormat
 from PyQt4.QtGui import QActionGroup,QMenu,QFileSystemModel
 from uiImpl.Ui_MainWindow import Ui_MainWindow
 from inoProject import InoProject
@@ -96,7 +96,6 @@ class MainWindow(QMainWindow):
 	
 	def cleanConsole(self):
 		currPalete = self.ui.consoleOut.palette()
-		currPalete.setColor(QPalette.Text,QColor("#00FF00"))
 		self.ui.consoleOut.setPalette(currPalete)
 		self.ui.consoleOut.clear()
 	
@@ -107,10 +106,16 @@ class MainWindow(QMainWindow):
 		self.ui.consoleOut.setTextCursor(c);
 			
 	def addErrorMessage(self,message):
-		currPalete = self.ui.consoleOut.palette()
-		currPalete.setColor(QPalette.Text,QColor("red"))
-		self.ui.consoleOut.setPalette(currPalete)
-		self.addMessage("# ERROR:"+message)
+		cur = self.ui.consoleOut.textCursor()
+		redFormat=QTextCharFormat()
+		redFormat.setForeground(Qt.red)
+		cur.setCharFormat(redFormat)
+		cur.insertText("#### ERROR ####\n"+message)
+		cur.movePosition(QTextCursor.End)
+		blackFormat=QTextCharFormat()
+		blackFormat.setForeground(Qt.black)
+		cur.setCharFormat(blackFormat)
+		self.ui.consoleOut.setTextCursor(cur)
 	
 	def newProject(self):
 		projectDir=QFileDialog.getExistingDirectory(self, caption=QString("New Project"))
@@ -162,9 +167,12 @@ class MainWindow(QMainWindow):
 		self.ui.action_Save.triggered.connect(self.save)
 		self.project.addMessage.connect(self.addMessage)
 		self.project.addErrorMessage.connect(self.addErrorMessage)
-		self.project.newMessage.connect(self.cleanConsole)		
+		self.project.newMessage.connect(self.cleanConsole)
+		self.project.statusChanged.connect(self.statusChanged)
 		self.ui.projectTree.doubleClicked.connect(self.openFile)
 		self.ui.action_New.triggered.connect(self.newFile)
+		self.ui.stopBtn.clicked.connect(self.project.stopProcess)
+		#Loading FS
 		fsModel = QFileSystemModel(self)
 		fsModel.setReadOnly(False)
 		fsModel.setRootPath(self.project.path)
@@ -176,6 +184,7 @@ class MainWindow(QMainWindow):
 		else:
 			self.boardActs[self.project.modelBoard].setChecked(True)
 		self.tabMap={}
+		self.setWindowTitle("QIno - "+self.project.path)
 	
 	def unsetProject(self):
 		allClosed=True
@@ -194,6 +203,9 @@ class MainWindow(QMainWindow):
 				self.project.newMessage.disconnect(self.cleanConsole)
 				self.ui.projectTree.doubleClicked.disconnect(self.openFile)
 				self.ui.action_New.triggered.disconnect(self.newFile)
+				self.ui.stopBtn.clicked.disconnect(self.project.stopProcess)
+				self.project.statusChanged.disconnect(self.statusChanged)
+				self.statusChanged("No Project loades")
 				self.project=None
 		return allClosed
 	
@@ -287,6 +299,10 @@ class MainWindow(QMainWindow):
 			else:
 				self.serialDialog=None
 				self.openSerialMonitor()
+	
+	@pyqtSlot(str)
+	def statusChanged(self,status):
+		self.ui.statusBar.showMessage(status)
 	
 	def closeEvent(self,event):
 		if (self.unsetProject()):
