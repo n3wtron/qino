@@ -1,7 +1,0 @@
-
-import os
-class InoProject(object):
-	def __init__(self, path):
-		self.path=path
-	def initialize(self):
-		print os.popen("ino init "+self.path).read()

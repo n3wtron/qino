@@ -1,5 +1,5 @@
 from PyQt4.QtCore import QString,pyqtSlot,QDir,QFile,QIODevice,QProcess,QModelIndex,QSettings,Qt
-from PyQt4.QtGui import QMainWindow,QFileDialog,QMessageBox,QPalette,QColor,QAction,QTextCursor,QTextCharFormat
+from PyQt4.QtGui import QMainWindow,QFileDialog,QMessageBox,QAction,QTextCursor,QTextCharFormat
 from PyQt4.QtGui import QActionGroup,QMenu,QFileSystemModel
 from uiImpl.Ui_MainWindow import Ui_MainWindow
 from inoProject import InoProject
