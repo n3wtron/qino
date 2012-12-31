@@ -1,8 +1,12 @@
 from PyQt4.QtGui import QTreeView,QAction,QMessageBox,QIcon,QInputDialog,QKeySequence
-from PyQt4.QtCore import QDir,QString,QFile
+from PyQt4.QtCore import QDir,QString,QFile,QIODevice
 class ProjectTree(QTreeView):
     def __init__(self,parent):
         QTreeView.__init__(self,parent)
+        
+        newFileAction=QAction(QIcon.fromTheme("document-new"),"New File",self)
+        newFileAction.triggered.connect(self.newFile)
+        self.addAction(newFileAction)
         
         newFolderAction=QAction(QIcon.fromTheme("folder-new"),"New Folder",self)
         newFolderAction.triggered.connect(self.newFolder)
@@ -12,6 +16,21 @@ class ProjectTree(QTreeView):
         deleteAction.setShortcut(QKeySequence.Delete)
         deleteAction.triggered.connect(self.deleteFile)
         self.addAction(deleteAction)
+    
+    def newFile(self):
+        print self.sender().__class__.__name__
+        index = self.currentIndex()
+        if self.model()!=None:
+            newFile=QInputDialog.getText(self, QString("New File"), QString("FileName"))
+            if newFile[1]:
+                finfo=self.model().fileInfo(index)
+                if (finfo.isDir()):
+                    newFileName = finfo.absoluteFilePath()+"/"+newFile[0]
+                else:
+                    newFileName = finfo.dir().absoluteFilePath()+"/"+newFile[0]
+                f=QFile(newFileName)
+                f.open(QIODevice.WriteOnly)
+                f.close()
     
     def newFolder(self):
         print self.sender().__class__.__name__

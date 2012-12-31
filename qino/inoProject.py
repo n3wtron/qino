@@ -14,26 +14,22 @@ class InoProcess(QtCore.QThread):
 		QtCore.QThread.__init__(self,project.parent())
 		self.project=project		
 		self.command=command
+		
 	
 	def run(self):
 		self.project.newMessage.emit()
 		self.project.addMessage.emit("# running: "+self.command+"\n")
 		start_time=time.time()
 		self.proc = QProcess(None)
+		self.proc.readyReadStandardError.connect(self.stdErrReady)
+		self.proc.readyReadStandardOutput.connect(self.stdOutReady) 
 		self.proc.setWorkingDirectory(self.project.path)
 		commands = self.command.split(' ')
 		args=QStringList()
 		for cmd in commands[1:]:
 			args.append(cmd)
 		self.proc.start(QString(commands[0]), args, mode=QIODevice.ReadOnly)
-		while (self.proc.waitForReadyRead()):
-			self.project.addMessage.emit(QString(unicode(self.proc.readAllStandardOutput())))
 		self.proc.waitForFinished()
-		
-		#Reading possible errors
-		errors=QString(unicode(self.proc.readAllStandardError()))
-		if (errors!=None and len(errors)>0):
-			self.project.addErrorMessage.emit(errors)
 		
 		end_time=time.time()
 		if (self.proc.exitCode()==0):
@@ -47,6 +43,16 @@ class InoProcess(QtCore.QThread):
 		if self.proc!=None and self.proc.state()!=QProcess.NotRunning:
 			self.project.addErrorMessage.emit("# Received stop process command\n")
 			self.proc.kill()
+			
+	def stdErrReady(self):
+		#Reading possible errors
+		errors=unicode(self.proc.readAllStandardError().data(),errors='ignore')
+		if (errors!=None and len(errors)>0):
+			self.project.addErrorMessage.emit(QString(errors))
+	def stdOutReady(self):
+		msg=unicode(self.proc.readAllStandardOutput().data(),errors='ignore')
+		if (msg!=None and len(msg)>0):
+			self.project.addMessage.emit(QString(msg))
 		
 class InoProject(QtCore.QObject):
 	""" SIGNALS """
@@ -75,13 +81,14 @@ class InoProject(QtCore.QObject):
 			self.currentProcess.stop()
 			self.currentProcess.terminate()
 			
-	@pyqtSlot()
-	def init(self):
-		if self.currentProcess==None:
-			self.statusChanged.emit("Initializing...")
-			self.currentProcess=InoProcess(self,"ino init")
-			self.currentProcess.start()
-			self.currentProcess.finished.connect(self.processFinished)
+	@staticmethod
+	def newProject(path):
+		initProcess=QProcess(None)
+		initProcess.setWorkingDirectory(path)
+		initProcess.start("ino",['init'])
+		initProcess.waitForFinished()
+		return initProcess.exitCode()==0
+		
 	
 	@pyqtSlot()
 	def build(self):

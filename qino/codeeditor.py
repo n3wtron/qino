@@ -1,4 +1,4 @@
-from PyQt4.QtGui import QPlainTextEdit,QTextEdit,QPainter,QTextFormat,QColor,QWidget,QSyntaxHighlighter,QTextCharFormat,QFont
+from PyQt4.QtGui import QPlainTextEdit,QTextEdit,QPainter,QTextFormat,QColor,QWidget,QSyntaxHighlighter,QTextCharFormat,QFont,QTextCursor
 from PyQt4.QtCore import pyqtSlot,QChar,QRect,QString,Qt,QFile,QIODevice,QRegExp,QSize
 from PyQt4 import QtCore
 
@@ -95,10 +95,22 @@ class CodeEditor(QPlainTextEdit):
             numTab=tabRE.matchedLength()
             if (currLine.trimmed().right(1)=="{"):
                 numTab+=1
-        QPlainTextEdit.keyPressEvent(self,event)
-        if (numTab>0):
-            for _ in range(0,numTab):
-                currLine=self.textCursor().insertText("\t")
+            QPlainTextEdit.keyPressEvent(self,event)
+            if (numTab>0):
+                tCursor=self.textCursor()
+                for _ in range(0,numTab):
+                    tCursor.insertText("\t")
+                #automatic close brace
+                if (currLine.trimmed().right(1)=="{"):
+                    tCursor.insertText("\n")
+                    for _ in range(0,numTab-1):
+                        tCursor.insertText("\t")
+                    tCursor.insertText("}")
+                    tCursor.movePosition(QTextCursor.PreviousBlock)
+                    tCursor.movePosition(QTextCursor.EndOfLine)
+                    self.setTextCursor(tCursor)
+        else:
+            QPlainTextEdit.keyPressEvent(self,event)
     
     def open(self,fileName):
         self.fileName=fileName
@@ -160,6 +172,7 @@ class CHighlighter(QSyntaxHighlighter):
         keywords.append("\\bunsigned\\b")
         keywords.append("\\bvirtual\\b")
         keywords.append("\\bvoid\\b")
+        keywords.append("\\breturn\\b")
         keywords.append("\\bvolatile\\b") 
         for kw in keywords:
             self.rules.append((QRegExp(kw),self.keywordFormat))

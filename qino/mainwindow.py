@@ -81,6 +81,7 @@ class MainWindow(QMainWindow):
 			self.serialMenu.addAction(act)
 		if len(results)>0:
 			self.serialGroup.actions()[0].setChecked(True)
+			self.setSerialPort()
 			
 	def setBoardModel(self):
 		if (self.project!=None):
@@ -110,7 +111,7 @@ class MainWindow(QMainWindow):
 		redFormat=QTextCharFormat()
 		redFormat.setForeground(Qt.red)
 		cur.setCharFormat(redFormat)
-		cur.insertText("#### ERROR ####\n"+message)
+		cur.insertText(message)
 		cur.movePosition(QTextCursor.End)
 		blackFormat=QTextCharFormat()
 		blackFormat.setForeground(Qt.black)
@@ -124,11 +125,11 @@ class MainWindow(QMainWindow):
 			if (len(prjDir.entryInfoList())>2):
 				QMessageBox.critical(self, QString("New Project"), QString("The directory %1 must be empty").arg(projectDir), buttons=QMessageBox.Ok, defaultButton=QMessageBox.Cancel)
 			else:
-				prj = InoProject(projectDir,self)
-				prj.init()
-				
-				self.unsetProject()
-				self.setProject(projectDir)
+				if not InoProject.newProject(projectDir) :
+					QMessageBox.critical(self, QString("New Project"), QString("Error creating %1 project").arg(projectDir), buttons=QMessageBox.Ok, defaultButton=QMessageBox.Cancel)
+				else:	
+					self.unsetProject()
+					self.setProject(projectDir)
 				
 	def newFile(self):
 		newFileName=QFileDialog.getSaveFileName(self, caption=QString("new File"),directory=self.project.path)
