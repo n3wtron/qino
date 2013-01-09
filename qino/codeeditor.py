@@ -84,9 +84,11 @@ class CodeEditor(QPlainTextEdit):
             self.updateLineNumberAreaWidth(0)
     
     def keyPressEvent(self,event):
+        customKey=False
         #AutoTab
-        numTab=0
         if (event.key()==Qt.Key_Enter or event.key()==16777220):
+            customKey=True
+            numTab=0
             #new line
             newBlock=self.textCursor().block()
             currLine=newBlock.text()
@@ -109,7 +111,30 @@ class CodeEditor(QPlainTextEdit):
                     tCursor.movePosition(QTextCursor.PreviousBlock)
                     tCursor.movePosition(QTextCursor.EndOfLine)
                     self.setTextCursor(tCursor)
-        else:
+        if event.key()==Qt.Key_Tab and self.textCursor().hasSelection():
+            customKey=True
+            selStart=self.textCursor().selectionStart()
+            selEnd=self.textCursor().selectionEnd()
+            cur=self.textCursor()
+            endBlock=self.document().findBlock(selEnd)
+            currBlock=self.document().findBlock(selStart)
+            while currBlock.position()<=endBlock.position():
+                cur.setPosition(currBlock.position());
+                cur.insertText("\t")
+                currBlock=currBlock.next()
+        if event.key()==Qt.Key_Backtab and self.textCursor().hasSelection():
+            customKey=True
+            selStart=self.textCursor().selectionStart()
+            selEnd=self.textCursor().selectionEnd()
+            cur=self.textCursor()
+            endBlock=self.document().findBlock(selEnd)
+            currBlock=self.document().findBlock(selStart)
+            while currBlock.position()<=endBlock.position():
+                cur.setPosition(currBlock.position());
+                if currBlock.text().left(1)=="\t":
+                    cur.deleteChar()
+                currBlock=currBlock.next()    
+        if not customKey:
             QPlainTextEdit.keyPressEvent(self,event)
     
     def open(self,fileName):
