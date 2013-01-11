@@ -1,5 +1,5 @@
-from PyQt4.QtCore import QString,pyqtSlot,QDir,QFile,QIODevice,QProcess,QModelIndex,QSettings,Qt
-from PyQt4.QtGui import QMainWindow,QFileDialog,QMessageBox,QAction,QTextCursor,QTextCharFormat
+from PyQt4.QtCore import QString,pyqtSlot,QDir,QFile,QIODevice,QProcess,QModelIndex,QSettings,Qt,QRegExp
+from PyQt4.QtGui import QMainWindow,QFileDialog,QMessageBox,QAction,QTextCursor,QTextCharFormat,QTextDocument
 from PyQt4.QtGui import QActionGroup,QMenu,QFileSystemModel
 from uiImpl.Ui_MainWindow import Ui_MainWindow
 from inoProject import InoProject
@@ -13,11 +13,19 @@ class MainWindow(QMainWindow):
 		self.tabMap={}
 		self.serialDialog=None
 		self.ui.setupUi(self)
-		self.ui.tabWidget.currentChanged.connect(self.tabChanged)
+		self.tabifyDockWidget(self.ui.searchDockWidget,self.ui.consoleDockWidget)
+
+		self.ui.documentTabWidget.currentChanged.connect(self.tabChanged)
 		self.ui.action_Close.triggered.connect(self.closeCurrentTab)
-		self.ui.tabWidget.tabCloseRequested.connect(self.tabClosed)
+		self.ui.documentTabWidget.tabCloseRequested.connect(self.tabClosed)
 		self.ui.action_Open_Project.triggered.connect(self.openProject)
 		self.ui.action_New_Project.triggered.connect(self.newProject)
+		#search
+		self.ui.action_Search.triggered.connect(self.openSearch)
+		self.ui.searchBtn.clicked.connect(self.search)
+		self.ui.searchEdit.returnPressed.connect(self.search)
+		self.ui.replaceBtn.clicked.connect(self.replace)
+		self.searchTextCur=None
 		
 		self.settings=QSettings("alpha01","qino")
 		
@@ -190,7 +198,7 @@ class MainWindow(QMainWindow):
 	def unsetProject(self):
 		allClosed=True
 		if (self.project!=None):
-			for _ in range(0,self.ui.tabWidget.count()):
+			for _ in range(0,self.ui.documentTabWidget.count()):
 				if (not self.tabClosed(0) ):
 					allClosed=False
 					break
@@ -233,32 +241,34 @@ class MainWindow(QMainWindow):
 	
 	@pyqtSlot(int)
 	def tabChanged(self,tabIndex):
-		self.currentCodeEditor=self.ui.tabWidget.widget(tabIndex)
+		self.searchTextCur=None
+		self.currentCodeEditor=self.ui.documentTabWidget.widget(tabIndex)
 	
 	@pyqtSlot(int)
 	def tabClosed(self,tabIndex):
-		editor=self.ui.tabWidget.widget(tabIndex)
+		editor=self.ui.documentTabWidget.widget(tabIndex)
 		if (not editor.document().isModified()):
-			self.ui.tabWidget.removeTab(tabIndex)
+			self.ui.documentTabWidget.removeTab(tabIndex)
 			del(self.tabMap[editor.fileName])
 		else:
 			fileName=editor.fileName
 			resp=QMessageBox.question(self, QString("Close File %1").arg(fileName), QString("Do you want save %1 before close it?").arg(fileName), QMessageBox.Yes,QMessageBox.No,QMessageBox.Cancel )
 			if (resp==QMessageBox.Yes):
 				editor.save()
-				self.ui.tabWidget.removeTab(tabIndex)
+				self.ui.documentTabWidget.removeTab(tabIndex)
 				del(self.tabMap[editor.fileName])
 			if (resp==QMessageBox.No):
-				self.ui.tabWidget.removeTab(tabIndex)
+				self.ui.documentTabWidget.removeTab(tabIndex)
 				del(self.tabMap[editor.fileName])
 			if (resp==QMessageBox.Cancel):
 				return False
+		self.searchTextCur=None
 		return True
 	
 	@pyqtSlot()
 	def closeCurrentTab(self):
-		if (self.ui.tabWidget.currentIndex()!=-1):
-			self.tabClosed(self.ui.tabWidget.currentIndex())
+		if (self.ui.documentTabWidget.currentIndex()!=-1):
+			self.tabClosed(self.ui.documentTabWidget.currentIndex())
 	
 	@pyqtSlot(QModelIndex)
 	def openFile(self,index):
@@ -266,21 +276,22 @@ class MainWindow(QMainWindow):
 			fileName=self.ui.projectTree.model().filePath(index)
 			#search already opened files
 			if not fileName in self.tabMap:
-				editor=CodeEditor(self.ui.tabWidget)
+				editor=CodeEditor(self.ui.documentTabWidget)
 				editor.modificationChanged.connect(self.documentChanged)
-				self.ui.tabWidget.addTab(editor, fileName)
+				self.ui.documentTabWidget.addTab(editor, fileName)
 				self.tabMap[fileName]=editor
 				editor.open(fileName)
-			self.ui.tabWidget.setCurrentWidget(self.tabMap[fileName])
+			self.ui.documentTabWidget.setCurrentWidget(self.tabMap[fileName])
 	
 	@pyqtSlot(bool)
 	def documentChanged(self,modified):
+		self.searchTextCur=None
 		editor=self.sender()
 		currFileName=QString(editor.fileName)
 		if (modified):
-			self.ui.tabWidget.setTabText(self.ui.tabWidget.indexOf(editor),QString(currFileName.replace(self.project.path,"")+'*'))
+			self.ui.documentTabWidget.setTabText(self.ui.documentTabWidget.indexOf(editor),QString(currFileName.replace(self.project.path,"")+'*'))
 		else:
-			self.ui.tabWidget.setTabText(self.ui.tabWidget.indexOf(editor),QString(currFileName.replace(self.project.path,"")))
+			self.ui.documentTabWidget.setTabText(self.ui.documentTabWidget.indexOf(editor),QString(currFileName.replace(self.project.path,"")))
 	
 	@pyqtSlot()
 	def openSerialMonitor(self):
@@ -305,6 +316,37 @@ class MainWindow(QMainWindow):
 	def statusChanged(self,status):
 		self.ui.statusBar.showMessage(status)
 	
+	@pyqtSlot()
+	def openSearch(self):
+		if (self.currentCodeEditor!=None):
+			self.tabifyDockWidget(self.ui.consoleDockWidget,self.ui.searchDockWidget)
+			self.ui.searchEdit.setFocus()
+		
+	@pyqtSlot()
+	def search(self):
+		searchStr=self.ui.searchEdit.text()
+		if len(searchStr)>0:
+			flags=QTextDocument.FindFlags()
+			if self.ui.searchCaseSensitive.isChecked():
+				flags=QTextDocument.FindCaseSensitively
+			if self.ui.searchBack.isChecked():
+				flags=flags.__or__(QTextDocument.FindBackward)
+			
+			if (self.ui.searchRegexp.isChecked()):
+				searchRE=QRegExp(searchStr)
+				self.searchTextCur=self.currentCodeEditor.document().find(searchRE,self.currentCodeEditor.textCursor(),flags)
+				self.currentCodeEditor.setTextCursor(self.searchTextCur)
+			else:
+				if(self.currentCodeEditor.find(searchStr,flags)):
+					self.searchTextCur=self.currentCodeEditor.textCursor()
+	
+	@pyqtSlot()
+	def replace(self):
+		repStr=self.ui.replaceEdit.text()
+		if self.searchTextCur!=None and self.searchTextCur.hasSelection() and not repStr.isEmpty():
+			self.searchTextCur.insertText(repStr)
+			self.searchTextCur=None
+			
 	def closeEvent(self,event):
 		if (self.unsetProject()):
 			QMainWindow.closeEvent(self,event)
